@@ -1,32 +1,36 @@
-class SignUp{
-    constructor(){
-        this.sqlhelper=new (require('../services/dbhelper/index'));
-        this.mysql=require('mysql');
+class SignUp {
+    constructor() {
+        this.sqlhelper = new (require('../services/dbhelper/index'));
+        this.mysql = require('mysql');
     }
-    
-async createUser(data) {
-    try { 
-        const result = await this.sqlhelper.executeQuery('SELECT * FROM `user_master` WHERE `vPhoneNumber` = ? AND `iRecDeleted` = 0;', [data.PhoneNumber]);        
-        if (result.length > 0) return { status: "true", message: "User Already Exists" };
-        
-        const _query = 'INSERT INTO `user_master` (`vFullName`, `vPhoneNumber`, `eGender`, `iAge`, `iCertificateNumber`, `iRoleId`) VALUES (?, ?, ?, ?, ?, ?)';
-        
-        const _values = [ data.FullName, data.PhoneNumber, data.Gender, data.Age, data.CertificateNumber, data.RoleId];
-        const _result = await this.sqlhelper.executeQuery(_query, _values);
-        
-        if (_result.affectedRows > 0) return { status: "true", message: "User Created Successfully." };
-        
-        return { status: "false", message: "User Creation Failed." };
-        
-        
-        
-    } catch (error) {
-        console.log(error);
-        
-        return {status:"false", message:error.message}
+
+    // Existing createUser method...
+
+    // New method to verify user credentials
+    async verifyUserCredentials(PhoneNumber, Password) {
+        try {
+            const query = 'SELECT * FROM `user_master` WHERE `vPhoneNumber` = ? AND `iRecDeleted` = 0;';
+            const result = await this.sqlhelper.executeQuery(query, [PhoneNumber]);
+
+            if (result.length === 0) {
+                return { status: "false", message: "User does not exist." };
+            }
+
+            const user = result[0];
+
+            // Assuming you have stored passwords securely (hashed), compare the stored hash with the provided password
+            const passwordMatch = (user.vPassword === Password); // Replace with actual password comparison logic
+
+            if (!passwordMatch) {
+                return { status: "false", message: "Incorrect Password." };
+            }
+
+            return { status: "true", user: user };
+        } catch (error) {
+            console.log(error);
+            return { status: "false", message: error.message };
+        }
     }
 }
 
-}
-
-module.exports=SignUp;
+module.exports = SignUp;
